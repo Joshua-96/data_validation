@@ -1,0 +1,54 @@
+{
+    "single_person": {
+        "first_name": "John",
+        "last_name": "Doe",
+        "date_of_birth": "1994/04/23",
+        "occupation": "Teacher",
+        "gender": "male",
+        "person_id": 23,
+        "is_smoker": true,
+        "email": "john.doe_94@gmail.com"
+    },
+    "job_position":{
+        "name": "manager",
+        "position_id": 23,
+        "occupied_by": {
+            "first_name": "John",
+            "last_name": "Doe",
+            "date_of_birth": "1994/04/23",
+            "occupation": "Teacher",
+            "gender": "male",
+            "person_id": 23,
+            "is_smoker": true
+        }
+    },
+    "team": [
+        {
+            "first_name": "John",
+            "last_name": "Doe",
+            "date_of_birth": "1994/04/23",
+            "occupation": "Teacher",
+            "gender": "male",
+            "person_id": 23,
+            "is_smoker": true
+        },
+        {
+            "first_name": "Henry",
+            "last_name": "Fletcher",
+            "date_of_birth": "1984/02/13",
+            "occupation": "Professor",
+            "gender": "male",
+            "person_id": 25,
+            "is_smoker": false
+        },
+        {
+            "first_name": "Jacob",
+            "last_name": "Lynch",
+            "date_of_birth": "1999/02/12",
+            "occupation": "Busdriver",
+            "gender": "male",
+            "person_id": 30,
+            "is_smoker": true
+        }
+    ]
+}
