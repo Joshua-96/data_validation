@@ -6,7 +6,7 @@ from typing import List
 import sys
 import data_validation.init_loggers as log_util
 from data_validation.data_parsing import DataWrapper
-from data_validation.validation import Validator, TypeHandler, Validator_Slotted
+from data_validation.validation import Validator, TypeHandler, Validator_Slotted, ValidationMeta
 from sample.example_custom_validations import Email_Validation, Precise_Email_Validation_dynamic
 from .example_type_mapping import _cast_to_bool_from_int, _cast_to_date_from_str
 
@@ -61,8 +61,8 @@ class PrecisePerson():
                            allow_none=True)
 
 
-class _Person_with_slots():
-    __slots__ = ["_first_name"]
+@dataclass
+class Person_with_slots(metaclass=ValidationMeta):
     first_name: str = Validator_Slotted()
 
     def __init__(self,
@@ -70,6 +70,12 @@ class _Person_with_slots():
         self.first_name = first_name
 
 
+# @dataclass(slots=True)
+# class Person_dummy(metaclass=ValidationMeta):
+#     first_name: str = Validator(default="hans")
+
+#     def __init__(self, first_name: str):
+#         self.first_name = first_name
 
 @dataclass
 class Job_Position(DataWrapper):
@@ -85,3 +91,8 @@ class Team_OLD_TYPING(DataWrapper):
 @dataclass
 class Team_NEW_TYPING(DataWrapper):
     individuals: list[Person]
+
+
+# personA = Person_with_slots("peter")
+# person = Person_with_slots("Hans")
+# person.first_name = 2
