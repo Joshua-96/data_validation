@@ -5,10 +5,33 @@
         "date_of_birth": "1994/04/23",
         "occupation": "Teacher",
         "gender": "male",
+        "hobbies": "absis,asidj",
         "person_id": 23,
         "is_smoker": true,
         "email": "john.doe_94@gmail.com"
     },
+
+    "example_child":{
+        "first_name": "Jule",
+        "last_name": "Fox",
+        "date_of_birth": "2004/07/19",
+        "occupation":null,
+        "gender": "female",
+        "person_id": 13,
+        "school_attendance": true,
+        "is_smoker":false,
+        "parents":[
+            {"first_name": "Steve",
+             "last_name": "Richard",
+             "gender":"male",
+             "person_id": 31
+           
+            }
+        ]
+
+
+    },
+
     "job_position":{
         "name": "manager",
         "position_id": 23,

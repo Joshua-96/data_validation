@@ -1,31 +1,24 @@
 import copy
 import json
-from typing import Any, List
+from typing import Any
 from unittest import TestCase
-from sample.example_dataclasses import Person
+from sample.example_dataclasses import Child
 from data_validation.exceptions import CastException, UnexpectedCastException
 import pathlib as pl
-import sys
-
-from sample.example_dataclasses import Team as Team
-
 
 
 TEST_FILE_PATH = pl.Path("./sample/example_input.json")
 
 
 class Test_Altering(TestCase):
-    PERSONS: List[Person]
-    TEAM: Team
+    TEST_DICT: dict
     cur_test_dict: dict
 
     def setUp(self) -> None:
         with TEST_FILE_PATH.open() as file:
-            self.PERSONS = json.load(file)["team"]
+            self.TEST_DICT = json.load(file)["example_child"]
+        self.person = Child(**self.TEST_DICT)
         return super().setUp()
-
+    
     def test_regular(self):
-        Team(individuals=self.PERSONS)
-
-    def test_single_item_list(self):
-        Team(individuals=[self.PERSONS[0]])
+        pass

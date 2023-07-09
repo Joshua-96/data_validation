@@ -17,8 +17,14 @@ class Test_Altering(TestCase):
     def setUp(self) -> None:
         with TEST_FILE_PATH.open() as file:
             self.TEST_DICT = json.load(file)["job_position"]
-        self.person = Job_Position(**self.TEST_DICT)
+        self.job = Job_Position(**self.TEST_DICT)
         return super().setUp()
     
     def test_regular(self):
         pass
+
+    def test_repr(self):
+        self.job.as_nested_dict()
+
+    def test_flat_repr(self):
+        self.job.as_dict()

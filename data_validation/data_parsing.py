@@ -1,7 +1,11 @@
 import logging
 import pathlib as pl
+from typing import Sequence
 from data_validation.init_loggers import init_console_logger, init_file_logger
 from abc import ABC, abstractmethod
+from collections import ChainMap
+
+from data_validation.validation import ValidationMeta
 
 
 class DataParingError(Exception):
@@ -9,7 +13,7 @@ class DataParingError(Exception):
         super().__init__(message)
 
 
-class DataWrapper(ABC):
+class Container(metaclass=ValidationMeta):
     """Abstract Base Class serving as Component Class that implements the Composite 
        pattern
        :param META_PARAMS: list - carry arguments from composite classes to leaf classes but are
@@ -17,39 +21,6 @@ class DataWrapper(ABC):
         the full path can only the constructed if the base path is propagated down from it's parent nodes """
 
     META_PARAMS = ["base_path", "log_level"]
-
-    def _propagate_to_subclass(self,
-                               attr,
-                               attr_type: type,
-                               actual_type: type,
-                               *args,
-                               **kwargs) -> None:
-        """Method of the Abstract BaseClass DataWrapper:
-        When a subclass of DataWrapper is nested inside another one.
-        The method will instantiate the nested class with the kwargs provided
-
-        :param attr: str - name of the subclass defined by the parent composite
-            dataclass attribute name
-        :param attr_type: type - Dataclass of the Leaf from which the attribute is
-            instantiated from, determined by the type annotation in the parent
-            composite Dataclass
-        :param actual_type: type - Checks if the Datatype is valid to pass,
-            either dict to pass as **kwargs or list to pass as *args
-        **kwargs Keyword arguments to instantiate the leaf class
-        :returns: None
-        """
-        def _call_subclass_with_additional_args():
-            """method to pass the META_PARAMS from composite to leaf class"""
-            if issubclass(attr_type, Iterable_Baseclass):
-                setattr(self, attr, attr_type(**kwargs))
-            else:
-                setattr(self, attr, attr_type(**kwargs))
-            return
-
-        if actual_type == "dict":
-            _call_subclass_with_additional_args()
-        elif actual_type == "list":
-            setattr(self, attr, attr_type(*args))
 
     def __post_init__(self, **kwargs):
         """general post init method that performs type checking and propagates the 
@@ -61,60 +32,21 @@ class DataWrapper(ABC):
         # set the META_PARAMS module-wide if they are set in the class i.E.
         # the top Level Classes
 
-        for attr, attr_type in self.__annotations__.items():
-            sub_attr_type = type(None)
-            if hasattr(attr_type, "__origin__"):
-                sub_attr_type = attr_type.__args__[0]
-                attr_type = getattr(attr_type, "__origin__")
-
-            if not (issubclass(attr_type, DataWrapper) or
-                    (issubclass(attr_type, list) and issubclass(sub_attr_type, DataWrapper))):
-                continue
-
-            if not hasattr(self, attr):
-                continue
-            kwargs = getattr(self, attr)
-            actual_type = type(kwargs).__name__
-
-            if actual_type in ["dict", "list"]\
-                and issubclass(attr_type, DataWrapper)\
-                    and kwargs is not None:
-                # convert dict to given Dataclass if specified
-                if actual_type == "list":
-                    args = kwargs
-                    kwargs = {}
-                else:
-                    args = []
-                try:
-                    self._propagate_to_subclass(attr,
-                                                attr_type,
-                                                actual_type,
-                                                *args,
-                                                **kwargs)
-
-                except TypeError as e:
-                    raise DataParingError(
-                        f"'{attr_type.__name__}' {e} from keyword arguments: {kwargs}")
-                except ValueError as e:
-                    raise DataParingError(
-                        f"'{attr_type.__name__}' " +
-                        f"got invalid value from field '{attr}': {e}")
-                except (FileNotFoundError, IsADirectoryError, NotADirectoryError) as e:
-                    raise DataParingError(
-                        f"{attr_type}" +
-                        f" got invalid path in field '{attr}': {e}")
-
-                except DataParingError as e:
-                    raise DataParingError(
-                        f"'{attr_type.__name__}' in Class {e}")
-                continue
-            if not isinstance(sub_attr_type, type(None)):
-                setattr(self,
-                        attr,
-                        [sub_attr_type(**element) for element in kwargs]
-                        )
-
         self.init_logger()
+
+    def __new__(cls, *args, **kwargs):
+        cls.__annotations__ = ChainMap(*(c.__annotations__ for c in cls.__mro__ if '__annotations__' in c.__dict__) )
+        obj = super().__new__(cls)
+        return obj
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __iter__(self):
+        return iter(self.as_dict())
+
+    def __getitem__(self, item):
+        return list(self)[item]
 
     def init_logger(self):
         """initialize the class logger with the name of the class,
@@ -151,14 +83,17 @@ class DataWrapper(ABC):
                 sub_dict = {f"{key}_{value}": sub_value
                             for value, sub_value in value.items()}
                 output_dict.update(sub_dict)
-            elif issubclass(type(value), DataWrapper):
+            elif issubclass(type(value), Container):
                 append_dict = {f"{value.__class__.__name__}_{k}": v
                                for k, v in value.__dict__.items()}
                 append_dict.pop(f"{value.__class__.__name__}_logger")
                 output_dict.update(append_dict)
             elif isinstance(value, logging.Logger):
                 pass
+            elif isinstance(value, Sequence):
+                output_dict[key] = ",".join([str(v) for v in value])
             else:
+                output_dict[key] = str(value)
                 self.logger.warn(
                     f"Unsupported datastructure, for dict unpacking: {value}")
 
@@ -174,14 +109,14 @@ class DataWrapper(ABC):
                 output_dict[key] = value
             elif type(value) == dict:
                 output_dict.update({key: value})
-            elif issubclass(type(value), DataWrapper):
+            elif issubclass(type(value), Container):
                 output_dict.update({key: value.as_nested_dict()})
             elif isinstance(value, pl.Path):
                 output_dict[key] = str(value)
         return output_dict
 
 
-class Iterable_Baseclass(DataWrapper):
+class Iterable_Baseclass(Container):
     """Baseclass that implements subscription magic methods"""
 
     def __init__(self) -> None:

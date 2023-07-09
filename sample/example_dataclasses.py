@@ -1,24 +1,31 @@
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
-from typing import List
+from typing import List, Tuple
 
 import sys
 import data_validation.init_loggers as log_util
-from data_validation.data_parsing import DataWrapper
-from data_validation.validation import Validator, TypeHandler, Validator_Slotted, ValidationMeta
+from data_validation.data_parsing import Container
+from data_validation.validation import ArgFunctionWrapper, FunctionWrapper, Scope, Validator, DefaultTypeHandler, Validator_Slotted, ValidationMeta
+from data_validation.validation_func import has_length
 from sample.example_custom_validations import Email_Validation, Precise_Email_Validation_dynamic
-from .example_type_mapping import _cast_to_bool_from_int, _cast_to_date_from_str
+from .example_type_mapping import _cast_from_int_to_bool_, _cast_from_str_to_date
 
 
 log_util.LoggingConfig.set_log_directory("./logs")
-TypeHandler.add_type_mapping(
-    incoming_type=str,
-    casted_type=date,
-    func=_cast_to_date_from_str,
-    dateformat="%Y/%m/%d"
+default_date_handler = DefaultTypeHandler(
+    source_type=str,
+    dest_type=date,
+    casting_fct=ArgFunctionWrapper(_cast_from_str_to_date,
+                                   dateformat="%Y/%m/%d")
 )
 
+special_date_handler = DefaultTypeHandler(
+    source_type=str,
+    dest_type=date,
+    casting_fct=ArgFunctionWrapper(_cast_from_str_to_date,
+                                   dateformat="%m/%d/%Y")
+)
 
 class Occupations(Enum):
     TEACHER = "Teacher"
@@ -34,12 +41,34 @@ class Gender(Enum):
 
 
 @dataclass
-class Person(DataWrapper):
+class Person(Container):
     first_name: str = Validator(allow_none=True)
     last_name: str = Validator()
-    date_of_birth: date = Validator()
+    date_of_birth: date = Validator(type_handler=default_date_handler)
     occupation: Occupations = Validator()
     gender: Gender = Validator()
+    hobbies: List[str] = Validator(
+        default=[],
+        type_handler=DefaultTypeHandler(
+            source_type=str,
+            dest_type=List[str],
+            casting_fct=lambda x: x.split(",")))
+    person_id: int = Validator()
+    is_smoker: bool = Validator(default=False)
+    email: str = Validator(validator_func=Email_Validation,
+                           default=None,
+                           allow_none=True)
+
+@dataclass
+class UnPrecisePerson(Container):
+    first_name: str = Validator(allow_none=False)
+    last_name: str = Validator(allow_none=False)
+    date_of_birth: date = Validator(allow_none=True,
+                                    default=None,
+                                    type_handler=default_date_handler)
+    occupation: Occupations = Validator(allow_none=True, default=None)
+    gender: Gender = Validator()
+    hobbies: List[str] = Validator(default=[])
     person_id: int = Validator()
     is_smoker: bool = Validator(default=False)
     email: str = Validator(validator_func=Email_Validation,
@@ -51,11 +80,17 @@ class Person(DataWrapper):
 class PrecisePerson():
     first_name: str = Validator(allow_none=True)
     last_name: str = Validator()
-    date_of_birth: date = Validator()
+    date_of_birth: date = Validator(type_handler=default_date_handler)
     occupation: Occupations = Validator()
+    hobbies: List[str] = Validator(
+        allow_none=True,
+        validator_func=ArgFunctionWrapper(
+            func=has_length,
+            value_kw="value",
+            value_range=[3, None]))
     gender: Gender = Validator()
     person_id: int = Validator()
-    is_smoker: bool = Validator(default=False)
+    is_smoker: bool = Validator(default=False, allow_none=True)
     email: str = Validator(validator_func=Precise_Email_Validation_dynamic,
                            default=None,
                            allow_none=True)
@@ -70,29 +105,23 @@ class Person_with_slots(metaclass=ValidationMeta):
         self.first_name = first_name
 
 
-# @dataclass(slots=True)
-# class Person_dummy(metaclass=ValidationMeta):
-#     first_name: str = Validator(default="hans")
-
-#     def __init__(self, first_name: str):
-#         self.first_name = first_name
-
 @dataclass
-class Job_Position(DataWrapper):
+class Job_Position(Container):
     occupied_by: Person
     name: str = Validator()
     position_id: int = Validator()
 
 
 @dataclass
-class Team_OLD_TYPING(DataWrapper):
+class Team(Container):
     individuals: List[Person]
 
+
 @dataclass
-class Team_NEW_TYPING(DataWrapper):
-    individuals: list[Person]
+class Child(Person):
+    occupation: Occupations = Validator(allow_none=True)
+    school_attendance: bool = Validator()
+    parents: Tuple[UnPrecisePerson] = Validator(
+        validator_func=ArgFunctionWrapper(has_length, value_range=[None, 2]),
+        validation_scope=Scope.COLLECTION)
 
-
-# personA = Person_with_slots("peter")
-# person = Person_with_slots("Hans")
-# person.first_name = 2

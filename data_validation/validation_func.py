@@ -23,10 +23,6 @@ def begins_with(value: str, start_val: str):
 
 
 def is_positiv(value: list[int | float]) -> bool:
-    if isinstance(value, list):
-        for v in value:
-            is_positiv(v)
-        return
     if value >= 0:
         return
     else:
@@ -35,27 +31,14 @@ def is_positiv(value: list[int | float]) -> bool:
 
 def is_between(value: int | float,
                value_range: list[int | float]) -> bool:
-    if isinstance(value, list):
-        for v in value:
-            is_between(v, value_range)
-        return
+
     min_val, max_val = value_range
     if max_val is not None:
-        if not (isinstance(max_val, int) or isinstance(max_val, float)):
-            raise TypeError(
-                f"max_value must be either Int or Float not {type(value)}!"
-            )
         if value > max_val:
             raise ValueError(
                 f"Value <{value}> is too large must be equal or smaller than {max_val}")
 
     if min_val is not None:
-        if isinstance(min_val, list):
-            min_val = min(min_val)
-        if not (isinstance(min_val, int) or isinstance(min_val, float)):
-            raise TypeError(
-                f"min_value must be either Int or Float not {type(value)}!"
-            )
         if value < min_val:
             raise ValueError(
                 f"Value <{value}> is too small must be equal or grater than {min_val}")
@@ -67,6 +50,10 @@ def has_length(value: list,
     """function to check, if list of values is in the expected length interval
         :param value: list - list of values
         :param value_range: list - list of upper and lower bound of expected length
+            examples:
+                between 3 and 5: [3, 5]\n
+                at least 3: [3, None]\n
+                at most 5: [None, 5]
         :raises TypeError if value list does not contain int or float elements
         :raises ValueError if length is out of bounds
         :returns None"""

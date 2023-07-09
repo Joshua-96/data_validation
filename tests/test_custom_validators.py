@@ -24,22 +24,20 @@ class Test_Altering(TestCase):
         pass
 
     def test_invalid_email_first_name(self):
-        self.assertRaises(
-            ValueError,
-            setattr,
-            *[self.person, "email", "john@gmail.com"]
-        )
-    
+        with self.assertRaises(ValueError) as cm:
+            self.person.email = "john@gmail.com"
+
     def test_invalid_email_last_name(self):
-        self.assertRaises(
-            ValueError,
-            setattr,
-            *[self.person, "email", "doe@gmail.com"]
-        )
-    
+        with self.assertRaises(ValueError) as cm:
+            self.person.email = "doe@gmail.com"
+
     def test_invalid_email_domain(self):
-        self.assertRaises(
-            ValueError,
-            setattr,
-            *[self.person, "email", "john.doe@spammer.io"]
-        ) 
+        with self.assertRaises(ValueError) as cm:
+            self.person.email = "john.doe@spammer.io"
+
+    def test_sequence_validation(self):
+        self.person.hobbies = ["asdf", "qwert", "ops"]
+
+    def test_sequence_validation_fail(self):
+        with self.assertRaises(ValueError) as cm:
+            self.person.hobbies = ["asd", "at", "asdt"]

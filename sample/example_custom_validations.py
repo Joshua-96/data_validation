@@ -1,5 +1,5 @@
 from typing import List
-from data_validation.validation import Function_Mapper, Static_Function_Mapper
+from data_validation.validation import ArgFunctionWrapper, FunctionWrapper
 
 
 def validate_email(value: str) -> None:
@@ -8,12 +8,11 @@ def validate_email(value: str) -> None:
     raise ValueError("Invalid Email")
 
 
-
 def dynamic_value_fct() -> List[str]:
     return ["gmail.com", "example_uni.edu", "outlook.com"]
 
 
-Email_Validation = Function_Mapper(func=validate_email, value_kw="value")
+Email_Validation = ArgFunctionWrapper(func=validate_email, value_kw="value")
 
 allowed_domains = ["gmail.com", "example_uni.edu", "outlook.com"]
 
@@ -34,7 +33,7 @@ def validate_email_precisely(value: str,
         raise ValueError(f"domain <{domain}> is missing from domain whitelist <{enumerated_domains}> missing from email")
 
 
-Precise_Email_Validation = Function_Mapper(
+Precise_Email_Validation = ArgFunctionWrapper(
     func=validate_email_precisely,
     value_kw="value",
     # Pass attribute Name to refer to instance field
@@ -43,12 +42,12 @@ Precise_Email_Validation = Function_Mapper(
     # Passing static arguments is also possible
     allowed_domains=allowed_domains)
 
-Precise_Email_Validation_dynamic = Function_Mapper(
+Precise_Email_Validation_dynamic = ArgFunctionWrapper(
     func=validate_email_precisely,
     value_kw="value",
     # Pass attribute Name to refer to instance field
     first_name="first_name",
     last_name="last_name",
     # Passing static arguments is also possible
-    allowed_domains=Static_Function_Mapper(dynamic_value_fct)
+    allowed_domains=FunctionWrapper(dynamic_value_fct)
 )
