@@ -4,11 +4,7 @@ from typing import Any
 from unittest import TestCase
 from sample.example_dataclasses import Person
 from data_validation.exceptions import CastException, UnexpectedCastException
-import pathlib as pl
-
-
-TEST_FILE_PATH = pl.Path("./sample/example_input.json")
-
+from tests import TEST_FILE_PATH
 
 class Test_Altering(TestCase):
     TEST_DICT: dict
@@ -48,6 +44,7 @@ class Test_Altering(TestCase):
     def test_invalid_cast(self):
         with self.assertRaises(TypeError) as cm:
             self.person.person_id = "invalid"
+
 
     def test_cast_bool_int(self):
         self.person.is_smoker = 1
@@ -94,6 +91,13 @@ class Test_Construction(TestCase):
         test_dict.pop("last_name")
         with self.assertRaises(TypeError) as cm:
             Person(**test_dict)
+
+    def test_bool_missing(self):
+        test_dict = copy.deepcopy(self.TEST_DICT)
+        test_dict.pop("is_smoker")
+        with self.assertRaises(TypeError) as cm:
+            Person(**test_dict)
+
 
 class Test_reprs(TestCase):
     TEST_DICT: dict

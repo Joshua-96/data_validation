@@ -8,10 +8,7 @@ import pathlib as pl
 import sys
 
 from sample.example_dataclasses import Team as Team
-
-
-
-TEST_FILE_PATH = pl.Path("./sample/example_input.json")
+from tests import TEST_FILE_PATH
 
 
 class Test_Altering(TestCase):

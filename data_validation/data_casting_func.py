@@ -1,13 +1,17 @@
 from datetime import datetime
 from math import log2
 
+from data_validation.decorators import apply_casting
 
+
+@apply_casting
 def _cast_to_bool_from_int(inp: int) -> bool:
     if inp in [0, 1]:
         return bool(inp)
-    raise TypeError(f"int value {inp} can not be casted to bool")
+    raise ValueError(f"int value {inp} can not be casted to bool")
 
 
+@apply_casting
 def _cast_to_bool_from_str(inp: str) -> bool:
     inp = inp.lower()
     if inp in ["true", "false"]:
@@ -17,18 +21,30 @@ def _cast_to_bool_from_str(inp: str) -> bool:
     )
 
 
-def _cast_to_int_from_float(inp: float) -> int:
+@apply_casting
+def _cast_float_to_int(inp: float) -> int:
+    """casts float to integer if possible without precision loss
+
+    Args:
+        inp (float): input value
+
+    Raises:
+        ValueError: if float contains decimal places
+
+    Returns:
+        int: casted value
+    """
     if int(inp) == inp:
         return int(inp)
     raise ValueError(
-        f"float value {inp} could not be casted to int without loss of presicion")
+        f"float value {inp} could not be casted to int without loss of precision")
 
 
-def _cast_to_datetime_from_str(inp: str, dateformat: str) -> datetime:
+@apply_casting
+def _cast_str_to_datetime(inp: str, dateformat: str) -> datetime:
     return datetime.strptime(inp, dateformat)
 
 
-def _cast_to_datetime_from_int(inp: int) -> datetime:
-    if log2(inp) > 34:
-        inp = inp // 1000
+@apply_casting
+def _cast_int_to_datetime(inp: int) -> datetime:
     return datetime.fromtimestamp(inp)

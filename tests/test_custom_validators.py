@@ -4,11 +4,8 @@ from typing import Any
 from unittest import TestCase
 from sample.example_dataclasses import PrecisePerson
 from data_validation.exceptions import CastException, UnexpectedCastException
-import pathlib as pl
 
-
-TEST_FILE_PATH = pl.Path("./sample/example_input.json")
-
+from tests import TEST_FILE_PATH
 
 class Test_Altering(TestCase):
     TEST_DICT: dict
