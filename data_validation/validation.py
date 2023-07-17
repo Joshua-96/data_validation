@@ -1,12 +1,13 @@
 from __future__ import annotations
 import logging
-import pathlib as pl
 from types import MappingProxyType
+from data_validation.data_parsing import Container
+from data_validation.decorators import apply_casting
 from data_validation.exceptions import CastException
+from data_validation.function_wrappers import ArgFunctionWrapper
 import data_validation.init_loggers as log_util
 from datetime import datetime
 from copy import deepcopy
-from functools import partial
 from collections.abc import Callable
 from typing import Any, Sequence
 from enum import Enum, auto
@@ -17,23 +18,9 @@ from data_validation.data_casting_func import (
     _cast_int_to_datetime,
     _cast_float_to_int,
     _cast_to_bool_from_str,
+    _cast_int_to_float,
+    _cast_str_to_datetime
 )
-
-
-class ValidationMeta(type):
-    def __new__(cls: type, name: str, bases: tuple, dct: dict):
-        # if "__annotations__" in dct:
-        #     parent_annotations = [b.__annotations__ for b in bases if '__annotations__' in b.__dict__]
-        #     dct["__annotations__"] = parent_annotations
-
-        if "__slots__" not in dct and "__annotations__" in dct:
-            dct["__slots__"] = (f"_{name}" for name in dct["__annotations__"])
-
-        return super().__new__(cls, name, bases, dct)
-
-
-class ValidatedClassSlotted(metaclass=ValidationMeta):
-    __metaType__: str = "slotted"
 
 
 class Scope(Enum):
@@ -41,99 +28,13 @@ class Scope(Enum):
     COLLECTION = auto()
 
 
-class FunctionWrapper:
-    """
-    Enclosing class for calling a specified functions at a later stage with specified *args and **kwargs
-
-    class for validation of arguments Dataclass Args:\n
-       Args:
-        func (function): callback function which will either run successfully \
-            or raise a Value Error
-        *args: any additional positional arguments
-        **kwargs: any additional keyword arguments
-    
-       Note:
-        Any Arguments Stored can be of type Function_Mapper as well and will be invoked at \
-        Invocation of Master Function Mapper
-
-       Returns:
-        any value passed from the wrapped function
-    """
-
-    value_kw: str
-    args: list
-    kwargs: dict
-
-    def __init__(self, func: Callable, *args, **kwargs) -> None:
-        self.func = func
-        self.init_args = args
-        self.args = ()
-        self.kwargs = kwargs
-
-    def __call__(self) -> Any:
-        """
-        invokes the enclosed functions with *args and **kwargs, \n
-        resolves any Callables of each kind of Argument
-        """
-        self.kwargs = {
-            k: self._resolve_ref_by_function(v) for k, v in self.kwargs.items()
-        }
-        self.args = [self._resolve_ref_by_function(item) for item in self.args]
-        return_value = self.func(*self.args, **self.kwargs)
-        self.args = ()
-        return return_value
-
-    def _resolve_ref_by_function(self, item):
-        """
-        checks if passed item is of self class and if so calls it's invoke Method
-        """
-        if not isinstance(item, self.__class__.__base__):
-            return item
-        return item()
-
-
-class ArgFunctionWrapper(FunctionWrapper):
-    """
-    Child Class of Function_Mapper which calls the enclosing function with an argument passed to it
-
-    class for validation of arguments Dataclass Args:\n
-       Args:
-        func (function): callback function which will either run successfully \
-            or raise a Value Error
-        value_kw (str): Optional keyword of the value in the enclosing function
-        *args: any additional positional arguments
-        **kwargs: any additional keyword arguments
-    
-       Note:
-        Any Arguments Stored can be of type Function_Mapper as well and will be invoked at \
-        Invocation of Master Function Mapper
-
-       Returns:
-        any value passed from the wrapped function
-    """
-
-    def __init__(
-        self, func: Callable[..., Any], value_kw: str = None, *args, **kwargs
-    ) -> None:
-        self.value_kw = value_kw
-        super().__init__(func, *args, **kwargs)
-
-    def __call__(self, value) -> Any:
-        """invokes the enclosing function with the value provided at runtime, \n
-        the value is incorporated into *arg or **kwargs before the\n
-        super-implementation is called"""
-        if self.value_kw is None:
-            self.args = (value,) + tuple(self.init_args)
-        else:
-            self.kwargs[self.value_kw] = value
-        return super().__call__()
-
-
 DEFAULT_TYPE_MAPPING = {
     (int, bool): ArgFunctionWrapper(_cast_to_bool_from_int),
     (float, int): ArgFunctionWrapper(_cast_float_to_int),
     (int, datetime): ArgFunctionWrapper(_cast_int_to_datetime),
     (str, bool): ArgFunctionWrapper(_cast_to_bool_from_str),
+    (int, float): ArgFunctionWrapper(_cast_int_to_float),
+    (str, datetime): ArgFunctionWrapper(_cast_str_to_datetime)
 }
 
 
@@ -144,12 +45,14 @@ class State(Enum):
 
 class DefaultTypeHandler:
     """
-    provides a standardized way to handle type casting the default implementation is meant as a
-    fallback instantiate the class to overwrite default behavior
+    provides a standardized way to handle type casting the default \n
+    implementation is meant as a fallback instantiate the class to
+    overwrite default behavior
 
     Attributes:
         TYPE_MAPPING: Dict[Tuple[type], ArgFunctionWrapper]:
-            Provides a Mapping composed of original and destination type and cast-function, this attribute can and should be expanded
+            Provides a Mapping composed of original and destination type and cast-function,\n
+            this attribute can and should be expanded
     """
 
     TYPE_MAPPING: MappingProxyType[Tuple[type], ArgFunctionWrapper]
@@ -159,7 +62,7 @@ class DefaultTypeHandler:
         source_type: type = None,
         dest_type: type = None,
         casting_fct: ArgFunctionWrapper = None,
-        empty: bool = False,
+        type_mapping: dict = DEFAULT_TYPE_MAPPING
     ) -> None:
         """Constructs a Instance with or without default types and the custom casting added.
 
@@ -169,8 +72,8 @@ class DefaultTypeHandler:
             casting_fct (ArgFunctionWrapper, optional): ArgsFunctionWrapper instance. Defaults to None.
             empty (bool, optional): if type_mapping should be pre-initialized or empty. Defaults to False.
         """
-        if not empty:
-            self.TYPE_MAPPING = DEFAULT_TYPE_MAPPING.copy()
+        if not type_mapping:
+            self.TYPE_MAPPING = MappingProxyType(DEFAULT_TYPE_MAPPING)
 
         if source_type and dest_type and casting_fct:
             assert (
@@ -215,9 +118,9 @@ class Validator:
 
     def __init__(
         self,
+        cleaning_func: ArgFunctionWrapper = None,
         type_handler: DefaultTypeHandler = DefaultTypeHandler(),
         validator_func: ArgFunctionWrapper = None,
-        cleaning_func: ArgFunctionWrapper = None,
         default: Any = State.NOT_SET,
         allow_none: bool = False,
         validation_scope: Scope = Scope.ITEM,
@@ -242,8 +145,8 @@ class Validator:
             omit_logging (bool, optional):\n
                 option to suppress all logging caused by the field. Defaults to False.
         """
-        self._type_handler = type_handler
         self._cleaning_func = cleaning_func
+        self._type_handler = type_handler
         self._validator_func = validator_func
         self._allow_none = allow_none
         self._default = default
@@ -300,14 +203,14 @@ class Validator:
         omit_logging = self._omit_logging if omit_logging is None else omit_logging
 
         return Validator(
-            type_handler,
-            validator_func,
-            cleaning_func,
-            default,
-            allow_none,
-            validation_scope,
-            self._logger,
-            omit_logging,
+            cleaning_func=cleaning_func,
+            type_handler=type_handler,
+            validator_func=validator_func,
+            default=default,
+            allow_none=allow_none,
+            validation_scope=validation_scope,
+            logger=self._logger,
+            omit_logging=omit_logging,
         )
 
     def __repr__(self) -> str:
@@ -384,7 +287,7 @@ class Validator:
                 raise CastException(
                     input_type=self._value_type,
                     output_type=type_tuple[1],
-                    message=f"value <{value}> is not a valid option",
+                    message=f"value '{value}' is not a valid option",
                 )
             return None
 
@@ -411,7 +314,7 @@ class Validator:
                         return self._handle_callables(value, type_tuple)
                 # assume a type_mapping to a complex type is missing
                 except CastException as e:
-                    raise ValueError(f"Improper Value: {e}")
+                    raise e
                 except Exception as e:
                     raise NotImplementedError(
                         f"value of type {self._value_type} could not be automatically casted to {self._annotated_type}, "
@@ -446,9 +349,17 @@ class Validator:
         if value is None:
             self._handle_None()
             return
-        value = self._handle_casting(
-            type_tuple=type_tuple, value=value, multiple=multiple
-        )
+        try:
+            value = self._handle_casting(
+                type_tuple=type_tuple, value=value, multiple=multiple
+            )
+        except CastException as e:
+            if issubclass(self._annotated_type, Container):  
+                raise CastException(
+                    f"Subclass {instance.__class__.__name__} with field name {self._name} failed to initialize due to:\n {e}")
+            else:
+                raise CastException(
+                    f"attribute '{self._name}' in Class '{instance.__class__.__name__}' could not be set due to:\n {e}")
         # handle trivial case where types match
         if isinstance(value, self._annotated_type) and self._validator_func is None:
             self._set_attr(instance, value)
@@ -568,3 +479,4 @@ class Validator_Slotted(Validator):
 
     def _set_attr(self, instance, value):
         setattr(instance, "_" + self._name, value)
+

@@ -112,17 +112,37 @@ person = Person(
     email="john.doe_94@gmail.com",
     image="example_folder/Profile.jpg"
 )
-# setting person_id to "abc" with result in a TypeError
+# setting person_id to "abc" will result in a TypeError
 person.person_id = "abc"
 ```
 the error message reads:\
-``TypeError: invalid type provided for attribute: person_id
+``TypeError: invalid type provided for attribute: 'person_id'
   expected type <class 'int'>, received value
   <abc> of type <class 'str'>``
 
 ### 2. Default Casting Behavior
 The following Casting functions are applied by default:
-- str -> bool indifferent to case:
+- str -> bool, indifferent to case:
     - ["true",True",TRUE"] -> true
     - ["False","false","FALSE"] -> false
     - other literals -> ValueError
+- int -> bool, works only for value 0 and 1:
+    - 1 -> True
+    - 0 -> False
+    - other int values -> ValueError
+- float -> int, will cast except for floats having decimal places != 0:
+    - 2.0 -> 2
+    - 2.5 -> ValueError
+- int -> datetime, convert unix-timestamp int into datetime:
+    - no checking for plausibility by default
+- str -> datetime, parse as string formatted time
+    - default format is '%Y-%m-%d'
+
+### 2.1 Modification and expansion of casting
+The Default Casting behavior is reflected in the class DefaultTypeHandler
+it serves as a fallback or baseline, thus it is recommended customize a TypeHandler to your needs.
+This can be achieved in two way:
+1. having One type of casting per TypeHandler, e.g. DateTypeHandler, NumericTypeHandler, PathTypeHandler etc.
+2. Defining one TypeHandler which includes most or all of the casting functionality
+
+In the first case construct a dict or other mapping type and pass it to the init function

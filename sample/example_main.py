@@ -5,8 +5,15 @@ import pathlib as pl
 from typing import List
 
 from data_validation.validation import Validator
+from sample.example_custom_validations import Precise_Email_Validation_dynamic
+from sample.example_dataclasses import PrecisePerson
+import sample.config as global_vars
 
 path = pl.Path("./sample/example_input.json").resolve()
+
+# simulate command line args or config
+input_args = {"dbConfig": "testDB://db@user:pw"}
+global_vars.dbConfig = input_args["dbConfig"]
 
 
 class Gender(Enum):
@@ -18,23 +25,13 @@ class Gender(Enum):
 with path.open("r") as inp:
     test_dict = json.load(inp)
 
-
-@dataclass
-class Person:
-    first_name: str = Validator()
-    last_name: str = Validator()
-    gender: Gender = Validator()
-    hobbies: List[str] = Validator()
-    person_id: int = Validator()
-    is_smoker: bool = Validator()
-    email: str = Validator()
-
-
-person = Person(
+person = PrecisePerson(
     first_name="John",
     last_name="Doe",
+    date_of_birth="1992/07/26",
+    occupation="Professor",
     gender="male",
-    hobbies=["ab"],
+    hobbies=["abc"],
     person_id=2,
     is_smoker=True,
     email="asdh",

@@ -1,5 +1,6 @@
 import pathlib as pl
 import re
+from typing import List, Union
 
 LOG_DIRECTORY: pl.Path = None
 
@@ -22,15 +23,15 @@ def begins_with(value: str, start_val: str):
         raise ValueError(f"Value <{value}> does not begin with '{start_val}'")
 
 
-def is_positiv(value: list[int | float]) -> bool:
+def is_positive(value: Union[int, float]) -> bool:
     if value >= 0:
         return
     else:
         raise ValueError(f"Value <{value}> must be positive")
 
 
-def is_between(value: int | float,
-               value_range: list[int | float]) -> bool:
+def is_between(value: Union[int, float],
+               value_range: List[Union[int, float]]) -> bool:
 
     min_val, max_val = value_range
     if max_val is not None:
@@ -46,7 +47,7 @@ def is_between(value: int | float,
 
 
 def has_length(value: list,
-               value_range: list[int | float]) -> bool:
+               value_range: list[Union[int, float]]) -> bool:
     """function to check, if list of values is in the expected length interval
         :param value: list - list of values
         :param value_range: list - list of upper and lower bound of expected length

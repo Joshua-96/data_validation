@@ -21,4 +21,4 @@ class Test_Altering(TestCase):
         pass
 
     def test_invalid(self):
-        self.person.first_name = 5
+        self.person.first_name = "Bard"

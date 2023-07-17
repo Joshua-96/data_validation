@@ -21,7 +21,14 @@ class Test_Altering(TestCase):
         pass
 
     def test_repr(self):
-        self.job.as_nested_dict()
+        self.job.as_dict()
 
     def test_flat_repr(self):
-        self.job.as_dict()
+        self.job.as_flattened_dict()
+
+    def test_other_repr(self):
+        self.job.other_dict()
+
+    def test_nested_invalid(self):
+        with self.assertRaises(CastException) as cm:
+            self.job.occupied_by.date_of_birth = "invalid"

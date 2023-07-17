@@ -2,7 +2,7 @@ from datetime import datetime
 from math import log2
 
 from data_validation.decorators import apply_casting
-
+from defaults import DATEFORMAT
 
 @apply_casting
 def _cast_to_bool_from_int(inp: int) -> bool:
@@ -41,7 +41,14 @@ def _cast_float_to_int(inp: float) -> int:
 
 
 @apply_casting
-def _cast_str_to_datetime(inp: str, dateformat: str) -> datetime:
+def _cast_int_to_float(inp: int) -> float:
+    return float(inp)
+
+
+@apply_casting
+def _cast_str_to_datetime(inp: str, dateformat: str = None) -> datetime:
+    if dateformat is None:
+        dateformat = DATEFORMAT
     return datetime.strptime(inp, dateformat)
 
 

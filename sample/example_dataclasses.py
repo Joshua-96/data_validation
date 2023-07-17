@@ -4,16 +4,14 @@ from enum import Enum
 from typing import List, Tuple
 
 import sys
+from data_validation.function_wrappers import ArgFunctionWrapper
 import data_validation.init_loggers as log_util
 from data_validation.data_parsing import Container
 from data_validation.validation import (
-    ArgFunctionWrapper,
-    FunctionWrapper,
     Scope,
     Validator,
     DefaultTypeHandler,
-    Validator_Slotted,
-    ValidationMeta,
+    Validator_Slotted
 )
 from data_validation.validation_func import has_length
 from sample.example_custom_validations import (
@@ -82,6 +80,7 @@ class Person(Container):
     person_id: int = defaultValidator()
     is_smoker: bool = defaultValidator()
     email: str = emailValidator()
+    weight: float = Validator(default=80.0)
 
 
 @dataclass
@@ -129,7 +128,7 @@ class Person_with_slots(Container):
 
 @dataclass
 class Job_Position(Container):
-    occupied_by: Person
+    occupied_by: Person = Validator()
     name: str = Validator()
     position_id: int = Validator()
 

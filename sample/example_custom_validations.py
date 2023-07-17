@@ -1,6 +1,8 @@
 from typing import List
-from data_validation.validation import ArgFunctionWrapper, FunctionWrapper
 
+from data_validation.function_wrappers import ArgFunctionWrapper, FunctionWrapper
+
+import sample.config as global_vars
 
 def validate_email(value: str) -> None:
     if "@" in value:
@@ -9,6 +11,8 @@ def validate_email(value: str) -> None:
 
 
 def dynamic_value_fct() -> List[str]:
+    
+    print(global_vars.dbConfig)
     return ["gmail.com", "example_uni.edu", "outlook.com"]
 
 

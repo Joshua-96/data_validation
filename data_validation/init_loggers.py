@@ -10,6 +10,10 @@ class LoggingConfig():
     _FILE_NAME = "log_file"
     _FILE_SUFFIX = ".txt"
 
+    def __init__(self) -> None:
+        raise RuntimeError("This Class is not meant to be instantiated use rather it is to be "
+                           "seen as a Singleton")
+
     @classmethod
     def set_log_directory(cls, path: Union[pl.Path, str]):
         path = pl.Path(path)
