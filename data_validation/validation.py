@@ -62,7 +62,7 @@ class DefaultTypeHandler:
         source_type: type = None,
         dest_type: type = None,
         casting_fct: ArgFunctionWrapper = None,
-        type_mapping: dict = DEFAULT_TYPE_MAPPING
+        type_mapping: dict = None
     ) -> None:
         """Constructs a Instance with or without default types and the custom casting added.
 
@@ -79,7 +79,9 @@ class DefaultTypeHandler:
             assert (
                 source_type != dest_type
             ), "source_type and destination type can not be the same!"
-            self.TYPE_MAPPING[(source_type, dest_type)] = casting_fct
+            temp_dict = {}
+            temp_dict[(source_type, dest_type)] = casting_fct
+            self.TYPE_MAPPING = MappingProxyType(temp_dict)
         else:
             assert (
                 source_type is None and dest_type is None and casting_fct is None
