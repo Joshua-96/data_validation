@@ -4,7 +4,7 @@ from types import MappingProxyType
 from data_validation.data_parsing import Container
 from data_validation.decorators import apply_casting
 from data_validation.exceptions import CastException
-from data_validation.function_wrappers import ArgFunctionWrapper
+from data_validation.function_wrappers import ArgFunctionWrapper, FunctionWrapper
 import data_validation.init_loggers as log_util
 from datetime import datetime
 from copy import deepcopy
@@ -72,6 +72,10 @@ class DefaultTypeHandler:
             casting_fct (ArgFunctionWrapper, optional): ArgsFunctionWrapper instance. Defaults to None.
             empty (bool, optional): if type_mapping should be pre-initialized or empty. Defaults to False.
         """
+        if casting_fct and not isinstance(casting_fct, ArgFunctionWrapper):
+            if not isinstance(casting_fct, Callable):
+                raise TypeError("argument for casting function can not be applied")
+            casting_fct = ArgFunctionWrapper(casting_fct)
         if not type_mapping:
             self.TYPE_MAPPING = MappingProxyType(DEFAULT_TYPE_MAPPING)
 
@@ -293,7 +297,7 @@ class Validator:
                 )
             return None
 
-    def _handle_casting(self, type_tuple: Tuple[type], value, multiple: bool):
+    def _handle_casting(self, instance, type_tuple: Tuple[type], value, multiple: bool):
         if type_tuple[0] == type_tuple[1]:
             return value
 
@@ -322,8 +326,8 @@ class Validator:
                         f"value of type {self._value_type} could not be automatically casted to {self._annotated_type}, "
                         + f"trying yielded Error: {e}"
                     )
-
         cast_fct = self._type_handler.TYPE_MAPPING[type_tuple]
+        self._resolve_instance_attr_ref(instance, cast_fct)
         if multiple:
             return map(cast_fct, value)
         else:
@@ -352,9 +356,10 @@ class Validator:
             self._handle_None()
             return
         try:
-            value = self._handle_casting(
-                type_tuple=type_tuple, value=value, multiple=multiple
-            )
+            value = self._handle_casting(instance=instance,
+                                         type_tuple=type_tuple,
+                                         value=value,
+                                         multiple=multiple)
         except CastException as e:
             if issubclass(self._annotated_type, Container):  
                 raise CastException(
@@ -362,14 +367,16 @@ class Validator:
             else:
                 raise CastException(
                     f"attribute '{self._name}' in Class '{instance.__class__.__name__}' could not be set due to:\n {e}")
+
+        # apply function to clean the possible values
+        if self._cleaning_func:
+            self._resolve_instance_attr_ref(instance, self._cleaning_func)
+            value = self._cleaning_func(value)
+
         # handle trivial case where types match
         if isinstance(value, self._annotated_type) and self._validator_func is None:
             self._set_attr(instance, value)
             return
-
-        # apply function to clean the possible values
-        if self._cleaning_func:
-            value = self._cleaning_func(value)
 
         if self._validator_func is None:
             self._set_attr(instance, value)
