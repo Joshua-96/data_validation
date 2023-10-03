@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
 from typing import List, Tuple
+import pathlib as pl
 
 import sys
 from data_validation.function_wrappers import ArgFunctionWrapper
@@ -13,27 +14,37 @@ from data_validation.validation import (
     DefaultTypeHandler,
     Validator_Slotted
 )
-from data_validation.validation_func import has_length
+from data_validation.validation_func import has_length, is_dir
 from sample.example_custom_validations import (
     Email_Validation,
     Precise_Email_Validation_dynamic,
 )
-from sample.example_type_mapping import _cast_from_str_to_date
+from sample.example_type_mapping import (_cast_from_int_to_bool_,
+                                         _cast_from_str_to_date,
+                                         _cast_from_path_pattern_to_list)
 
 
 log_util.LoggingConfig.set_log_directory("./logs")
 default_date_handler = DefaultTypeHandler(
     source_type=str,
     dest_type=date,
-    casting_fct=ArgFunctionWrapper(_cast_from_str_to_date, dateformat="%Y/%m/%d"),
+    casting_fct=ArgFunctionWrapper(
+        _cast_from_str_to_date, dateformat="%Y/%m/%d"),
 )
 
 special_date_handler = DefaultTypeHandler(
     source_type=str,
     dest_type=date,
-    casting_fct=ArgFunctionWrapper(_cast_from_str_to_date, dateformat="%m/%d/%Y"),
+    casting_fct=ArgFunctionWrapper(
+        _cast_from_str_to_date, dateformat="%m/%d/%Y"),
 )
 
+pattern_path_handler = DefaultTypeHandler(
+    source_type=str, dest_type=List[pl.Path],
+    casting_fct=ArgFunctionWrapper(
+        _cast_from_path_pattern_to_list,
+        folder="personal_documents_folder")
+    )
 
 class Occupations(Enum):
     TEACHER = "Teacher"
@@ -54,7 +65,8 @@ date_Validator = Validator(type_handler=default_date_handler)
 commaSeparatedValidator = Validator(
     default=[],
     type_handler=DefaultTypeHandler(
-        source_type=str, dest_type=List[str], casting_fct=lambda x: x.split(",")
+        source_type=str, dest_type=List[str], casting_fct=lambda x: x.split(
+            ",")
     ),
 )
 
@@ -112,6 +124,12 @@ class PrecisePerson:
     )
     gender: Gender = Validator()
     person_id: int = Validator()
+    personal_documents_folder: pl.Path = Validator(
+        validator_func=ArgFunctionWrapper(is_dir), default=None, allow_none=True)
+    personal_file: pl.Path = Validator(default=None, allow_none=True)
+    paths_of_all_files: List[pl.Path] = Validator(type_handler=pattern_path_handler,
+                                                  default=None,
+                                                  allow_none=True)
     is_smoker: bool = Validator(default=False, allow_none=True)
     email: str = Validator(
         validator_func=Precise_Email_Validation_dynamic, default=None, allow_none=True

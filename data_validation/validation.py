@@ -87,7 +87,9 @@ class DefaultTypeHandler:
             assert (
                 source_type != dest_type
             ), "source_type and destination type can not be the same!"
-            self.TYPE_MAPPING[(source_type, dest_type)] = casting_fct
+            temp_dict = {}
+            temp_dict[(source_type, dest_type)] = casting_fct
+            self.TYPE_MAPPING = MappingProxyType(temp_dict)
         else:
             assert (
                 source_type is None and dest_type is None and casting_fct is None
@@ -299,7 +301,7 @@ class Validator:
                 )
             return None
 
-    def _handle_casting(self, type_tuple: Tuple[type], value, multiple: bool):
+    def _handle_casting(self, instance, type_tuple: Tuple[type], value, multiple: bool):
         if type_tuple[0] == type_tuple[1]:
             return value
 
@@ -328,8 +330,8 @@ class Validator:
                         f"value of type {self._value_type} could not be automatically casted to {self._annotated_type}, "
                         + f"trying yielded Error: {e}"
                     )
-
         cast_fct = self._type_handler.TYPE_MAPPING[type_tuple]
+        self._resolve_instance_attr_ref(instance, cast_fct)
         if multiple:
             return map(cast_fct, value)
         else:
@@ -358,9 +360,10 @@ class Validator:
             self._handle_None()
             return
         try:
-            value = self._handle_casting(
-                type_tuple=type_tuple, value=value, multiple=multiple
-            )
+            value = self._handle_casting(instance=instance,
+                                         type_tuple=type_tuple,
+                                         value=value,
+                                         multiple=multiple)
         except CastException as e:
             if issubclass(self._annotated_type, Container):  
                 raise CastException(
@@ -368,14 +371,16 @@ class Validator:
             else:
                 raise CastException(
                     f"attribute '{self._name}' in Class '{instance.__class__.__name__}' could not be set due to:\n {e}")
+
+        # apply function to clean the possible values
+        if self._cleaning_func:
+            self._resolve_instance_attr_ref(instance, self._cleaning_func)
+            value = self._cleaning_func(value)
+
         # handle trivial case where types match
         if isinstance(value, self._annotated_type) and self._validator_func is None:
             self._set_attr(instance, value)
             return
-
-        # apply function to clean the possible values
-        if self._cleaning_func:
-            value = self._cleaning_func(value)
 
         if self._validator_func is None:
             self._set_attr(instance, value)
