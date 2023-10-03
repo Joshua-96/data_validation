@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Tuple
 import pathlib as pl
 
-import sys
+
 from data_validation.function_wrappers import ArgFunctionWrapper
 import data_validation.init_loggers as log_util
 from data_validation.data_parsing import Container
@@ -19,8 +19,7 @@ from sample.example_custom_validations import (
     Email_Validation,
     Precise_Email_Validation_dynamic,
 )
-from sample.example_type_mapping import (_cast_from_int_to_bool_,
-                                         _cast_from_str_to_date,
+from sample.example_type_mapping import (_cast_from_str_to_date,
                                          _cast_from_path_pattern_to_list)
 
 
@@ -46,14 +45,15 @@ pattern_path_handler = DefaultTypeHandler(
         folder="personal_documents_folder")
     )
 
-class Occupations(Enum):
+
+class Occupations(str, Enum):
     TEACHER = "Teacher"
     PROFESSOR = "Professor"
     BUS_DRIVER = "Busdriver"
     JANITOR = "Janitor"
 
 
-class Gender(Enum):
+class Gender(str, Enum):
     MALE = "male"
     FEMALE = "female"
     OTHER = "other"

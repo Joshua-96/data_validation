@@ -4,6 +4,7 @@ from enum import Enum
 import logging
 import pathlib as pl
 from typing import Sequence
+from data_validation.exceptions import CastException
 from data_validation.init_loggers import init_console_logger, init_file_logger
 from abc import abstractmethod
 from collections import ChainMap
@@ -23,7 +24,7 @@ class Container(metaclass=ValidationMeta):
         not directly part of a leaf class e.g. a relative path is given in a nested field
         the full path can only the constructed if the base path is propagated down from it's parent nodes """
 
-    META_PARAMS = ["base_path", "log_level"]        
+    META_PARAMS = ["base_path", "log_level", "logger"]        
 
     def __new__(cls, *args, **kwargs):
         cls.__annotations__ = ChainMap(*(c.__annotations__
@@ -31,6 +32,16 @@ class Container(metaclass=ValidationMeta):
                                          if '__annotations__' in c.__dict__))
         obj = super().__new__(cls)
         return obj
+
+    @classmethod
+    def static_validation(cls, verbose=True, *args, **kwargs) -> str:
+        """tests if class can be initialized given the arguments without actually instantiating it
+          returns Error Text if it fails and 'Success' if no errors are raised"""
+        try:
+            _ = cls(*args, **kwargs)
+            return "Success"
+        except (ValueError, TypeError, CastException) as e:
+            return f"Failed with Error: {e}"
 
     # to ensure the compatibility with dataclasses as subclasses
     def __post_init__(self) -> None:
@@ -77,10 +88,11 @@ class Container(metaclass=ValidationMeta):
         return output_dict
 
     def as_dict(self) -> dict:
-        """get nested dict representation of a composite class"""
+        """get nested dict representation of a composite class resolving Enum types to their 
+        respective Str representation"""
         output_dict = {}
         for key, value in self.__dict__.items():
-            if key in self.META_PARAMS + ["distribution"]:
+            if key in self.META_PARAMS:
                 continue
             if type(value) in [int, float, str, list] or value is None:
                 output_dict[key] = value
@@ -94,6 +106,11 @@ class Container(metaclass=ValidationMeta):
                 output_dict[key] = str(value)
 
         return output_dict
-    
-    def other_dict(self) -> dict:
-        return dataclasses.asdict(self)
+
+    def dataclass_dict_repr(self) -> dict:
+        # detach, and reattach logger to exclude it from the dict representation
+        temp_logger = self.logger
+        del self.logger
+        dict_repr = dataclasses.asdict(self)
+        self.logger = temp_logger
+        return dict_repr

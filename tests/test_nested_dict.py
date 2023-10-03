@@ -27,7 +27,7 @@ class Test_Altering(TestCase):
         self.job.as_flattened_dict()
 
     def test_other_repr(self):
-        self.job.other_dict()
+        sample_dict = self.job.dataclass_dict_repr()
 
     def test_nested_invalid(self):
         with self.assertRaises(CastException) as cm:

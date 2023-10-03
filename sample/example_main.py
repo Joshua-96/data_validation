@@ -6,7 +6,7 @@ from typing import List
 
 from data_validation.validation import Validator
 from sample.example_custom_validations import Precise_Email_Validation_dynamic
-from sample.example_dataclasses import PrecisePerson
+from sample.example_dataclasses import PrecisePerson, Gender
 import sample.config as global_vars
 
 path = pl.Path("./sample/example_input.json").resolve()
@@ -14,12 +14,6 @@ path = pl.Path("./sample/example_input.json").resolve()
 # simulate command line args or config
 input_args = {"dbConfig": "testDB://db@user:pw"}
 global_vars.dbConfig = input_args["dbConfig"]
-
-
-class Gender(Enum):
-    MALE = "male"
-    FEMALE = "female"
-    OTHER = "other"
 
 
 with path.open("r") as inp:

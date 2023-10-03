@@ -1,6 +1,8 @@
 from __future__ import annotations
 import logging
 from types import MappingProxyType
+
+
 from data_validation.data_parsing import Container
 from data_validation.decorators import apply_casting
 from data_validation.exceptions import CastException
@@ -62,7 +64,7 @@ class DefaultTypeHandler:
         source_type: type = None,
         dest_type: type = None,
         casting_fct: ArgFunctionWrapper = None,
-        type_mapping: Dict[Tuple[type], ArgFunctionWrapper] = None,
+        type_mapping: Dict[Tuple[type], ArgFunctionWrapper] = {},
         omit_default: bool = False
     ) -> None:
         """Constructs a Instance with or without default types and the custom casting added.
@@ -394,8 +396,10 @@ class Validator:
         for key, val in temp_dict.items():
             if isinstance(val, list):
                 for i, v in enumerate(val):
-                    if not isinstance(v, str) and hasattr(instance, v):
-                        val[i] = getattr(instance, v)                        
+                    if not isinstance(v, str):
+                        continue
+                    elif hasattr(instance, v):
+                        val[i] = getattr(instance, v)
             else:
                 if hasattr(instance, str(val)):
                     temp_dict[key] = getattr(instance, val)

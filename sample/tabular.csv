@@ -1,0 +1,4 @@
+"first_name","last_name","date_of_birth","occupation","gender","person_id","is_smoker"
+"John","Doe","1994/04/223","Teacher","male", 23,true
+"Henry","Fletcher","1984/02/13","Professor","male", 25,false
+"Jacob","Lynch","1999/02/12","Busdriver","male", 30,true
