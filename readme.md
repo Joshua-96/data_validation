@@ -142,7 +142,40 @@ The following Casting functions are applied by default:
 The Default Casting behavior is reflected in the class DefaultTypeHandler
 it serves as a fallback or baseline, thus it is recommended customize a TypeHandler to your needs.
 This can be achieved in two way:
-1. having One type of casting per TypeHandler, e.g. DateTypeHandler, NumericTypeHandler, PathTypeHandler etc.
+1. Having one type of casting per TypeHandler, e.g. DateTypeHandler, NumericTypeHandler, PathTypeHandler etc.
 2. Defining one TypeHandler which includes most or all of the casting functionality
 
-In the first case construct a dict or other mapping type and pass it to the init function
+In the first case construct a dict or other mapping type and pass it to the init function:
+```python
+from datetime import datetime, date
+
+from data_validation.validation import DefaultTypeHandler
+from data_validation.decorators import apply_casting
+
+# define custom function for casting
+@apply_casting
+def _cast_from_str_to_date(inp: str, dateformat: str) -> date:
+    return datetime.strptime(inp, dateformat).date()
+
+# case 1: specific handler
+customDateHandler = DefaultTypeHandler(
+    source_type=str,
+    dest_type=date,
+    casting_fct=ArgFunctionWrapper(_cast_from_str_to_date, dateformat="%Y/%m/%d"),
+    type_mapping=None
+)
+
+# case 2: universal handler
+common_casting_mapping = {
+    (str, date): ArgFunctionWrapper(_cast_from_str_to_date, dateformat="%Y/%m/%d"),
+    ...
+}
+
+universalDataHandler = DefaultTypeHandler(
+    type_mapping = common_casting_mapping
+)
+
+```
+
+
+In the second case use the arguments of the init function to just map one cast function at a time, at the same time set type_mapping to None:

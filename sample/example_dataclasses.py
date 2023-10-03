@@ -18,7 +18,7 @@ from sample.example_custom_validations import (
     Email_Validation,
     Precise_Email_Validation_dynamic,
 )
-from sample.example_type_mapping import _cast_from_int_to_bool_, _cast_from_str_to_date
+from sample.example_type_mapping import _cast_from_str_to_date
 
 
 log_util.LoggingConfig.set_log_directory("./logs")

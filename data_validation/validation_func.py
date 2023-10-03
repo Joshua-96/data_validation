@@ -23,7 +23,7 @@ def begins_with(value: str, start_val: str):
         raise ValueError(f"Value <{value}> does not begin with '{start_val}'")
 
 
-def is_positive(value: Union[int, float]) -> bool:
+def is_positive(value: Union[int, float]) -> None:
     if value >= 0:
         return
     else:
@@ -31,7 +31,7 @@ def is_positive(value: Union[int, float]) -> bool:
 
 
 def is_between(value: Union[int, float],
-               value_range: List[Union[int, float]]) -> bool:
+               value_range: List[Union[int, float]]) -> None:
 
     min_val, max_val = value_range
     if max_val is not None:
@@ -47,7 +47,7 @@ def is_between(value: Union[int, float],
 
 
 def has_length(value: list,
-               value_range: list[Union[int, float]]) -> bool:
+               value_range: list[Union[int, float]]) -> None:
     """function to check, if list of values is in the expected length interval
         :param value: list - list of values
         :param value_range: list - list of upper and lower bound of expected length
@@ -79,7 +79,7 @@ def has_length(value: list,
     return
 
 
-def is_in(value: str, value_list: list):
+def is_in(value: str, value_list: list) -> None:
     if value in value_list:
         return
     else:

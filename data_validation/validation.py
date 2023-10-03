@@ -4,7 +4,7 @@ from types import MappingProxyType
 from data_validation.data_parsing import Container
 from data_validation.decorators import apply_casting
 from data_validation.exceptions import CastException
-from data_validation.function_wrappers import ArgFunctionWrapper
+from data_validation.function_wrappers import ArgFunctionWrapper, FunctionWrapper
 import data_validation.init_loggers as log_util
 from datetime import datetime
 from copy import deepcopy
@@ -28,7 +28,7 @@ class Scope(Enum):
     COLLECTION = auto()
 
 
-DEFAULT_TYPE_MAPPING = {
+DEFAULT_TYPE_MAPPING: MappingProxyType[Tuple[type], ArgFunctionWrapper] = {
     (int, bool): ArgFunctionWrapper(_cast_to_bool_from_int),
     (float, int): ArgFunctionWrapper(_cast_float_to_int),
     (int, datetime): ArgFunctionWrapper(_cast_int_to_datetime),
@@ -62,7 +62,8 @@ class DefaultTypeHandler:
         source_type: type = None,
         dest_type: type = None,
         casting_fct: ArgFunctionWrapper = None,
-        type_mapping: dict = DEFAULT_TYPE_MAPPING
+        type_mapping: Dict[Tuple[type], ArgFunctionWrapper] = None,
+        omit_default: bool = False
     ) -> None:
         """Constructs a Instance with or without default types and the custom casting added.
 
@@ -70,9 +71,16 @@ class DefaultTypeHandler:
             source_type (type, optional): type of the source. Defaults to None.
             dest_type (type, optional): type of the destination. Defaults to None.
             casting_fct (ArgFunctionWrapper, optional): ArgsFunctionWrapper instance. Defaults to None.
-            empty (bool, optional): if type_mapping should be pre-initialized or empty. Defaults to False.
+            type_mapping(dict): Pre-initialized custom type Mapping of the same Signature or DEFAULT_TYPE_MAPPING
+            omit_default (bool, optional): if type_mapping should be pre-initialized or empty. Defaults to False.
         """
-        if not type_mapping:
+        if not omit_default:
+            custom_mapping = deepcopy(DEFAULT_TYPE_MAPPING)
+            custom_mapping.update(type_mapping)
+            self.TYPE_MAPPING = MappingProxyType(custom_mapping)
+        elif type_mapping or not omit_default:
+            self.TYPE_MAPPING = MappingProxyType(type_mapping)
+        else:
             self.TYPE_MAPPING = MappingProxyType(DEFAULT_TYPE_MAPPING)
 
         if source_type and dest_type and casting_fct:
@@ -381,10 +389,8 @@ class Validator:
         for key, val in temp_dict.items():
             if isinstance(val, list):
                 for i, v in enumerate(val):
-                    if not isinstance(v, str):
-                        continue
-                    elif hasattr(instance, v):
-                        val[i] = getattr(instance, v)
+                    if not isinstance(v, str) and hasattr(instance, v):
+                        val[i] = getattr(instance, v)                        
             else:
                 if hasattr(instance, str(val)):
                     temp_dict[key] = getattr(instance, val)
@@ -409,7 +415,7 @@ class Validator:
             if msg is not None:
                 self._logger.error(msg)
         except ValueError as e:
-            raise ValueError(f"ValidationTest failed for field '{self._name}': {e}")
+            raise ValueError(f"Validation Test failed for field '{self._name}': {e}")
         self._set_attr(instance, value)
 
 

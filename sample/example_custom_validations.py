@@ -34,7 +34,7 @@ def validate_email_precisely(value: str,
     domain = value.split("@")[1]
     enumerated_domains = ",".join(allowed_domains)
     if domain not in allowed_domains:
-        raise ValueError(f"domain <{domain}> is missing from domain whitelist <{enumerated_domains}> missing from email")
+        raise ValueError(f"domain <{domain}> is not in domain whitelist: <{enumerated_domains}>")
 
 
 Precise_Email_Validation = ArgFunctionWrapper(

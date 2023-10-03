@@ -2,7 +2,7 @@ from datetime import datetime
 from math import log2
 
 from data_validation.decorators import apply_casting
-from defaults import DATEFORMAT
+from data_validation.defaults import DATEFORMAT
 
 @apply_casting
 def _cast_to_bool_from_int(inp: int) -> bool:

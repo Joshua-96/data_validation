@@ -7,7 +7,8 @@ from data_validation.exceptions import CastException, UnexpectedCastException
 
 def apply_casting(func: Callable) -> Callable:
     """wrapper for calling functions for casting
-       Need keyword 'inp' for value other wise first annotated value is taken from function signature
+       Need keyword 'inp' for value other wise first annotated value is
+       taken from function signature
     Args:
         func (Callable): function to wrap
 
