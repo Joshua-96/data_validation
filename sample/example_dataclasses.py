@@ -20,7 +20,8 @@ from sample.example_custom_validations import (
     Precise_Email_Validation_dynamic,
 )
 from sample.example_type_mapping import (_cast_from_str_to_date,
-                                         _cast_from_path_pattern_to_list)
+                                         _cast_from_path_pattern_to_list,
+                                         split_str)
 
 
 log_util.LoggingConfig.set_log_directory("./logs")
@@ -62,12 +63,12 @@ class Gender(str, Enum):
 defaultValidator = Validator()
 date_Validator = Validator(type_handler=default_date_handler)
 
+
+
 commaSeparatedValidator = Validator(
     default=[],
     type_handler=DefaultTypeHandler(
-        source_type=str, dest_type=List[str], casting_fct=lambda x: x.split(
-            ",")
-    ),
+        source_type=str, dest_type=List[str], casting_fct=ArgFunctionWrapper(split_str,delimiter=","))
 )
 
 emailValidator = Validator(

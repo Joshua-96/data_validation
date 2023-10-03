@@ -350,7 +350,7 @@ class Validator:
             value = self._handle_default_case(instance, value)
             return
 
-        if hasattr(self._annotated_type, "__origin__"):
+        if hasattr(self._annotated_type, "__origin__") and isinstance(value, Sequence) and not isinstance(value, str):
             self._handle_Sequences(instance, value)
             multiple = True
             type_tuple = (self._sub_value_type, self._sub_annotated_type)
@@ -380,10 +380,12 @@ class Validator:
             value = self._cleaning_func(value)
 
         # handle trivial case where types match
-        if isinstance(value, self._annotated_type) and self._validator_func is None:
-            self._set_attr(instance, value)
-            return
-
+        try:
+            if isinstance(value, self._annotated_type) and self._validator_func is None:
+                self._set_attr(instance, value)
+                return
+        except TypeError:
+            pass
         if self._validator_func is None:
             self._set_attr(instance, value)
             return
@@ -394,7 +396,7 @@ class Validator:
     def _resolve_instance_attr_ref(self, instance, functionWrapper: FunctionWrapper):
         temp_dict = deepcopy(functionWrapper.kwargs)
         for key, val in temp_dict.items():
-            if isinstance(val, list):
+            if isinstance(val, Sequence) and not isinstance(val, str):
                 for i, v in enumerate(val):
                     if not isinstance(v, str):
                         continue

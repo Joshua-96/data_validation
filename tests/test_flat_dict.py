@@ -68,6 +68,10 @@ class Test_Altering(TestCase):
     def test_list_assignment(self):
         self.person.hobbies = ["auhb", "jiouasn"]
 
+    def test_string_expansion(self):
+        self.person.hobbies = "soccer,baseball"
+        self.assertIsInstance(self.person.hobbies, list)
+
     def test_invalid_bool_cast_int(self):
         with self.assertRaises(Exception) as cm:
             self.person.is_smoker = 2

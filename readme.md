@@ -178,4 +178,25 @@ universalDataHandler = DefaultTypeHandler(
 ```
 
 
-In the second case use the arguments of the init function to just map one cast function at a time, at the same time set type_mapping to None:
+In the second case use the defined additional type_mapping will overwrite exiting entries or be added to the DEFAULT_TYPE_MAPPING object. In this case a conversion from str -> datetime was already defined but is overwritten by the new definition or in this case the different dateformat is applied. 
+
+### 2.2 Working with Iterable Fields (e.g. list and tuples)
+A common Use-Case are String-concatenated Field which represent a Collection, generally speaking a string should be expanded into a list, considering the type_mapping object we can utilize the List Object from the typing lib and define:
+```python
+from typing import List
+
+@apply_casting
+def split_str(inp: str, delimiter: str) -> List[str]:
+    return inp.split(delimiter)
+
+{(str, List[str]): ArgFunctionWrapper(split_str, delimiter=",")}
+``` 
+
+### 3. Inheritance Behavior of Validated Classes  
+
+
+### 4. Tree-like Structures with Validated Classes
+
+### 5. Usage with DataFrames   
+
+

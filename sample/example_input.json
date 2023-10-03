@@ -5,10 +5,10 @@
         "date_of_birth": "1994/04/23",
         "occupation": "Teacher",
         "gender": "male",
-        "hobbies": "absis,asidj",
+        "hobbies": ["basketball","soccer"],
         "person_id": 23,
         "is_smoker": true,
-        "email": "john.doe_94@gmail.com"
+        "email": "John.Doe_94@gmail.com"
     },
 
     "example_child":{

@@ -14,6 +14,7 @@ def _cast_from_str_to_date(inp: str, dateformat: str) -> date:
 def _cast_to_datetime_from_int(inp: int) -> date:
     return datetime.fromtimestamp(inp)
 
+
 @apply_casting
 def _cast_from_path_pattern_to_list(inp: str, folder: pl.Path) -> List[pl.Path]:
     resolved_paths = list(folder.rglob(inp))
@@ -22,3 +23,8 @@ def _cast_from_path_pattern_to_list(inp: str, folder: pl.Path) -> List[pl.Path]:
             f"No files found match the pattern {inp} inside folder {folder}"
         )
     return resolved_paths
+
+
+@apply_casting
+def split_str(inp: str, delimiter: str) -> List[str]:
+    return inp.split(delimiter)
