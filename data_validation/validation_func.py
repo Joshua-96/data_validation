@@ -4,10 +4,10 @@ from typing import List, Union
 
 LOG_DIRECTORY: pl.Path = None
 
-IS_FILE_MSG = "path to directory was expected but filepath was given: "
-IS_DIR_MSG = "filepath was expected, but path to directory was given: "
-FILE_MISSING_MSG = "file not found at location: "
-DIR_MISSING_MSG = "directory not found at location: "
+IS_FILE_MSG = "path to directory was expected but filepath was given:"
+IS_DIR_MSG = "filepath was expected, but path to directory was given:"
+FILE_MISSING_MSG = "file not found at location:"
+DIR_MISSING_MSG = "directory not found at location:"
 
 
 def extract_digits_from_string(value: str):
@@ -46,36 +46,41 @@ def is_between(value: Union[int, float],
     return
 
 
-def has_length(value: list,
-               value_range: list[Union[int, float]]) -> None:
-    """function to check, if list of values is in the expected length interval
-        :param value: list - list of values
-        :param value_range: list - list of upper and lower bound of expected length
-            examples:
-                between 3 and 5: [3, 5]\n
-                at least 3: [3, None]\n
-                at most 5: [None, 5]
-        :raises TypeError if value list does not contain int or float elements
-        :raises ValueError if length is out of bounds
-        :returns None"""
-    minsize, maxsize = value_range
-    if maxsize is not None:
-        if not isinstance(maxsize, int):
+def has_length(value: list, lower_bound: int = None, upper_bound: int = None) -> None:
+    """checks if the length of the list is within the interval specified
+
+    Args:
+        value (list): list of values to check
+        lower_bound (int): lower bound of the length must be >=1
+        upper_bound (int): upper bound of the length
+
+    Raises:
+        ValueError: length of the list is not within the bounds
+        TypeError: bounds are not of type int
+    """
+    if upper_bound is not None:
+        if not isinstance(upper_bound, int):
             raise ValueError(
-                f"Value <'{value}'> is too long must be less than {maxsize} elements long")
+                f"List of Elements <'{value}'> is too long must be at most {upper_bound} \
+                    elements long")
         if isinstance(value, int):
             value = str(value)
-        if len(value) > maxsize:
+        if len(value) > upper_bound:
             raise TypeError(
-                f"max_value must be either Int or Float not {type(value)}!")
+                f"max_value must be of type Int received type {type(value)}!")
 
-    if minsize is not None:
-        if not isinstance(minsize, int):
+    if lower_bound is not None:
+        if not isinstance(lower_bound, int):
             raise TypeError(
-                f"min_value must be either Int or Float not {type(value)}!")
-        if len(value) < minsize:
+                f"min_value must be of type Int, received type {type(value)}!")
+        if lower_bound < 0:
             raise ValueError(
-                f"Value '{value}' is too short must at least {minsize} elements long")
+                f"minsize '{lower_bound}' is negative which is not allowed as a lower bound"
+            )
+        if len(value) < lower_bound:
+            raise ValueError(
+                f"List of Elements '{value}' is too short must at least {lower_bound}\
+                      elements long")
     return
 
 
@@ -98,22 +103,23 @@ def is_optional_dir(value: pl.Path) -> str:
     return missing_dir_msg + "creating directory"
 
 
-def is_dir(value: pl.Path) -> str:
-    """Checks if directory exists or is a file, raises and error or returns a
-       warning. Will create the directory recursively if raise_error is set to false
-       :param value: pl.Path - Path to check
-       :param raise_error: bool - whether to raise an error
-       :raises NotADirectoryError
-       :raises FileNotFoundError
-       :returns: str - a message with a appropriate warning"""
+def is_dir(value: pl.Path) -> None:
+    """checks if a directory exists, raises an appropriate error if not
+
+    Args:
+        value (pl.Path): path of directory
+
+    Raises:
+        ValueError: path given is not a directory or  file does not exists
+    """
     if value.is_dir() and value.exists():
         return
     elif value.is_file():
         is_file_msg = f"{IS_FILE_MSG} {value}"
-        raise NotADirectoryError(is_file_msg)
+        raise ValueError(is_file_msg)
 
     missing_dir_msg = f"{DIR_MISSING_MSG} {value}"
-    raise FileNotFoundError(missing_dir_msg)
+    raise ValueError(missing_dir_msg)
 
 
 def is_optional_file(value: pl.Path) -> str:
@@ -126,14 +132,17 @@ def is_optional_file(value: pl.Path) -> str:
     return file_missing_msg
 
 
-def is_file(value: pl.Path):
+def is_file(value: pl.Path) -> None:
     """Checks if file exists or is a directory, raises and error or returns a
        warning.
-       :param value: pl.Path - Path to check
-       :param raise_error: bool - whether to raise an error
-       :raises IsADirectoryError
-       :raises FileNotFoundError
-       :returns: str - a message with a appropriate warning"""
+
+    Args:
+        value (pl.Path): path of the file
+
+    Raises:
+        IsADirectoryError: expected file, but found a directory instead
+        FileNotFoundError: file not found at given path
+    """
     if value.is_file():
         return
     elif value.is_dir():

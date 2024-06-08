@@ -3,7 +3,8 @@ from typing import Any, Callable
 
 class FunctionWrapper:
     """
-    Enclosing class for calling a specified functions at a later stage with specified *args and **kwargs
+    Enclosing class for calling a specified functions at a later stage with specified \
+        *args and **kwargs
 
     class for validation of arguments Dataclass Args:\n
        Args:

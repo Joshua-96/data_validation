@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from enum import Enum
 from typing import List, Tuple
@@ -12,39 +12,40 @@ from data_validation.validation import (
     Scope,
     Validator,
     DefaultTypeHandler,
-    Validator_Slotted
+    Validator_Slotted,
 )
 from data_validation.validation_func import has_length, is_dir
 from sample.example_custom_validations import (
-    Email_Validation,
+    email_Validation,
     Precise_Email_Validation_dynamic,
 )
-from sample.example_type_mapping import (_cast_from_str_to_date,
-                                         _cast_from_path_pattern_to_list,
-                                         split_str)
+from sample.example_type_mapping import (
+    _cast_from_str_to_date,
+    _cast_from_path_pattern_to_list,
+    split_str,
+)
 
 
 log_util.LoggingConfig.set_log_directory("./logs")
 default_date_handler = DefaultTypeHandler(
     source_type=str,
     dest_type=date,
-    casting_fct=ArgFunctionWrapper(
-        _cast_from_str_to_date, dateformat="%Y/%m/%d"),
+    casting_fct=ArgFunctionWrapper(_cast_from_str_to_date, dateformat="%Y/%m/%d"),
 )
 
 special_date_handler = DefaultTypeHandler(
     source_type=str,
     dest_type=date,
-    casting_fct=ArgFunctionWrapper(
-        _cast_from_str_to_date, dateformat="%m/%d/%Y"),
+    casting_fct=ArgFunctionWrapper(_cast_from_str_to_date, dateformat="%m/%d/%Y"),
 )
 
 pattern_path_handler = DefaultTypeHandler(
-    source_type=str, dest_type=List[pl.Path],
+    source_type=str,
+    dest_type=List[pl.Path],
     casting_fct=ArgFunctionWrapper(
-        _cast_from_path_pattern_to_list,
-        folder="personal_documents_folder")
-    )
+        _cast_from_path_pattern_to_list, folder="personal_documents_folder"
+    ),
+)
 
 
 class Occupations(str, Enum):
@@ -64,15 +65,17 @@ defaultValidator = Validator()
 date_Validator = Validator(type_handler=default_date_handler)
 
 
-
 commaSeparatedValidator = Validator(
     default=[],
     type_handler=DefaultTypeHandler(
-        source_type=str, dest_type=List[str], casting_fct=ArgFunctionWrapper(split_str,delimiter=","))
+        source_type=str,
+        dest_type=List[str],
+        casting_fct=ArgFunctionWrapper(split_str, delimiter=","),
+    ),
 )
 
 emailValidator = Validator(
-    validator_func=Email_Validation, default=None, allow_none=True
+    validator_func=email_Validation, default=None, allow_none=True
 )
 
 validatorWithNone = Validator(allow_none=True)
@@ -107,7 +110,7 @@ class UnPrecisePerson(Container):
     person_id: int = Validator()
     is_smoker: bool = Validator(default=False)
     email: str = Validator(
-        validator_func=Email_Validation, default=None, allow_none=True
+        validator_func=email_Validation, default=None, allow_none=True
     )
 
 
@@ -120,17 +123,19 @@ class PrecisePerson:
     hobbies: List[str] = Validator(
         allow_none=True,
         validator_func=ArgFunctionWrapper(
-            func=has_length, value_kw="value", value_range=[3, None]
+            func=has_length, value_kw="value", lower_bound=3
         ),
+        validation_scope=Scope.COLLECTION,
     )
     gender: Gender = Validator()
     person_id: int = Validator()
     personal_documents_folder: pl.Path = Validator(
-        validator_func=ArgFunctionWrapper(is_dir), default=None, allow_none=True)
+        validator_func=ArgFunctionWrapper(is_dir), default=None, allow_none=True
+    )
     personal_file: pl.Path = Validator(default=None, allow_none=True)
-    paths_of_all_files: List[pl.Path] = Validator(type_handler=pattern_path_handler,
-                                                  default=None,
-                                                  allow_none=True)
+    paths_of_all_files: List[pl.Path] = Validator(
+        type_handler=pattern_path_handler, default=None, allow_none=True
+    )
     is_smoker: bool = Validator(default=False, allow_none=True)
     email: str = Validator(
         validator_func=Precise_Email_Validation_dynamic, default=None, allow_none=True
@@ -162,6 +167,6 @@ class Child(Person):
     occupation: Occupations = Validator(allow_none=True)
     school_attendance: bool = Validator()
     parents: Tuple[UnPrecisePerson] = Validator(
-        validator_func=ArgFunctionWrapper(has_length, value_range=[None, 2]),
+        validator_func=ArgFunctionWrapper(has_length, lower_bound=0, upper_bound=2),
         validation_scope=Scope.COLLECTION,
     )

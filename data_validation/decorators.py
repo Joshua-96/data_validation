@@ -7,14 +7,15 @@ from data_validation.exceptions import CastException, UnexpectedCastException
 
 def apply_casting(func: Callable) -> Callable:
     """wrapper for calling functions for casting
-       Need keyword 'inp' for value other wise first annotated value is
+       Need keyword 'inp' for value otherwise first annotated value is
        taken from function signature
     Args:
         func (Callable): function to wrap
 
     Raises:
         CastException: is raised when value did not comply
-        UnexpectedCastException: is raised when other exceptions than ValueError and TypeError were raised
+        UnexpectedCastException: is raised when other exceptions than ValueError and TypeError
+            were raised
 
     Returns:
         Callable: inner wrapper function

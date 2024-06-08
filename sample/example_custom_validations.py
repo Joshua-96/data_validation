@@ -4,6 +4,7 @@ from data_validation.function_wrappers import ArgFunctionWrapper, FunctionWrappe
 
 import sample.config as global_vars
 
+
 def validate_email(value: str) -> None:
     if "@" in value:
         return
@@ -11,13 +12,12 @@ def validate_email(value: str) -> None:
 
 
 def dynamic_value_fct() -> List[str]:
-    
+    # placeholder for an arbitrary data-retrieving logic
     print(global_vars.dbConfig)
     return ["gmail.com", "example_uni.edu", "outlook.com"]
 
 
-Email_Validation = ArgFunctionWrapper(func=validate_email, value_kw="value")
-
+email_Validation = ArgFunctionWrapper(func=validate_email, value_kw="value")
 allowed_domains = ["gmail.com", "example_uni.edu", "outlook.com"]
 
 
@@ -30,7 +30,7 @@ def validate_email_precisely(value: str,
     if first_name.lower() not in value.lower():
         raise ValueError(f"first name <{first_name}> missing from email")
     if last_name.lower() not in value.lower():
-        raise ValueError(f"first name <{first_name}> missing from email")
+        raise ValueError(f"last name <{last_name}> missing from email")
     domain = value.split("@")[1]
     enumerated_domains = ",".join(allowed_domains)
     if domain not in allowed_domains:

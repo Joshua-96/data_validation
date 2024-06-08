@@ -5,7 +5,7 @@
         "date_of_birth": "1994/04/23",
         "occupation": "Teacher",
         "gender": "male",
-        "hobbies": ["basketball","soccer"],
+        "hobbies": ["basketball","soccer","hiking"],
         "person_id": 23,
         "is_smoker": true,
         "email": "John.Doe_94@gmail.com"

@@ -4,16 +4,15 @@ from types import MappingProxyType
 
 
 from data_validation.data_parsing import Container
-from data_validation.decorators import apply_casting
 from data_validation.exceptions import CastException
 from data_validation.function_wrappers import ArgFunctionWrapper, FunctionWrapper
 import data_validation.init_loggers as log_util
 from datetime import datetime
 from copy import deepcopy
 from collections.abc import Callable
-from typing import Any, Sequence
+from typing import Any, Generic, Sequence
 from enum import Enum, auto
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, TypeVar
 
 from data_validation.data_casting_func import (
     _cast_to_bool_from_int,
@@ -21,13 +20,16 @@ from data_validation.data_casting_func import (
     _cast_float_to_int,
     _cast_to_bool_from_str,
     _cast_int_to_float,
-    _cast_str_to_datetime
+    _cast_str_to_datetime,
 )
 
 
 class Scope(Enum):
     ITEM = auto()
+    """maps the validation function onto the individual elements of a Iterable,
+    i.e. length > 5 for each of the string values within a list"""
     COLLECTION = auto()
+    """checks a certain property on the enclosing Iterable, i.e. length of the list > 5"""
 
 
 DEFAULT_TYPE_MAPPING: MappingProxyType[Tuple[type], ArgFunctionWrapper] = {
@@ -36,7 +38,7 @@ DEFAULT_TYPE_MAPPING: MappingProxyType[Tuple[type], ArgFunctionWrapper] = {
     (int, datetime): ArgFunctionWrapper(_cast_int_to_datetime),
     (str, bool): ArgFunctionWrapper(_cast_to_bool_from_str),
     (int, float): ArgFunctionWrapper(_cast_int_to_float),
-    (str, datetime): ArgFunctionWrapper(_cast_str_to_datetime)
+    (str, datetime): ArgFunctionWrapper(_cast_str_to_datetime),
 }
 
 
@@ -65,16 +67,19 @@ class DefaultTypeHandler:
         dest_type: type = None,
         casting_fct: ArgFunctionWrapper = None,
         type_mapping: Dict[Tuple[type], ArgFunctionWrapper] = {},
-        omit_default: bool = False
+        omit_default: bool = False,
     ) -> None:
         """Constructs a Instance with or without default types and the custom casting added.
 
         Args:
             source_type (type, optional): type of the source. Defaults to None.
             dest_type (type, optional): type of the destination. Defaults to None.
-            casting_fct (ArgFunctionWrapper, optional): ArgsFunctionWrapper instance. Defaults to None.
-            type_mapping(dict): Pre-initialized custom type Mapping of the same Signature or DEFAULT_TYPE_MAPPING
-            omit_default (bool, optional): if type_mapping should be pre-initialized or empty. Defaults to False.
+            casting_fct (ArgFunctionWrapper, optional): ArgsFunctionWrapper instance. \
+                Defaults to None.
+            type_mapping(dict): Pre-initialized custom type Mapping of the same Signature or \
+                DEFAULT_TYPE_MAPPING
+            omit_default (bool, optional): if type_mapping should be pre-initialized or empty. \
+                Defaults to False.
         """
         if not omit_default:
             custom_mapping = deepcopy(DEFAULT_TYPE_MAPPING)
@@ -98,29 +103,20 @@ class DefaultTypeHandler:
             ), "either no args or all args need be passed"
 
 
-class Validator:
+ValidatedClass = TypeVar("ValidatedClass")
+
+
+class Validator(Generic[ValidatedClass]):
     """
     This Descriptor class manages the general UseCase of Type Checking and Data validation
-
-    class for validation of arguments Dataclass Args:\n
-
-       Attributes:
-        ----------\n
-        annotated_type: type
-            type hint from assigned field
-        value_type: type
-            type of the passed value
-        sub_value_type: type
-            type of the items of a Sequence type (e.g. list, tuple, set)
-        sub_annotated_type: type = type(None)
-            type of the type hints of the items of a Sequence e.g. List[str]
-       Raises:
+    
+    Attributes:
+        annotated_type (type): type hint from assigned field\n
+        value_type (type): type of the passed value
+        sub_value_type (type): type of the items of a Sequence type (e.g. list, tuple, set)
+        sub_annotated_type (type): type of the type hints of the items of a Sequence e.g. List[str]
+    Raises:
         ValueError: if the Validation fails
-        TypeError: if the type in value_list or value_range don't match
-
-       Returns:
-        either the default value or the value passed by the owner class \
-        defaults itself to none   
     """
 
     _annotated_type: type
@@ -139,21 +135,22 @@ class Validator:
         logger: logging.Logger = None,
         omit_logging: bool = False,
     ):
-        """_summary_
-
+        """
         Args:
-            type_handler (DefaultTypeHandler, optional):\n
+            cleaning_func (FunctionWrapper, optional): \
+                custom preprocessing before value is passed to type_handler instance and \
+                validation func. Defaults to None.\n
+            type_handler (DefaultTypeHandler, optional): \
                 Custom TypeHandler to include. Defaults to DefaultTypeHandler().\n
-            validator_func (FunctionWrapper, optional):\n
-                custom Validation Functionality. Defaults to None.\n
-            cleaning_func (FunctionWrapper, optional):\n
-                custom preprocessing before value is passed to type_handler instance and validation func. Defaults to None.\n
+            validator_func (FunctionWrapper, optional): \
+                custom Validation Functionality. Defaults to None.
             default (Any, optional):\n
                 Default for value the Descriptor is assigned to. Defaults to False.\n
             allow_none (bool, optional):\n
                 if None is a valid Value. Defaults to False.\n
-            validation_scope (Scope, optional): if the assigned field is of type Sequence \n
-                (e.g. list, tuple, sets), determined whether the validation is applied to the elements or the collection itself. Defaults to Scope.ITEM.\n
+            validation_scope (Scope, optional): if the assigned field is of type Sequence \
+                (e.g. list, tuple, sets), determines whether the validation is applied to the \
+                elements or the collection itself. Defaults to Scope.ITEM.
             omit_logging (bool, optional):\n
                 option to suppress all logging caused by the field. Defaults to False.
         """
@@ -184,20 +181,23 @@ class Validator:
         validation_scope: Scope = None,
         omit_logging: bool = False,
     ) -> Validator:
-        """_summary_
+        """ factory method, will invoke the instance with predefined settings, but enables \
+            overwriting of specific values
         Args:
-            type_handler (DefaultTypeHandler, optional):\n
-                Custom TypeHandler to include. Defaults to DefaultTypeHandler().\n
+            type_handler (DefaultTypeHandler, optional): Custom TypeHandler to include.\
+                  Defaults to DefaultTypeHandler().\n
             validator_func (FunctionWrapper, optional):\n
                 custom Validation Functionality. Defaults to None.\n
             cleaning_func (FunctionWrapper, optional):\n
-                custom preprocessing before value is passed to type_handler instance and validation func. Defaults to None.\n
+                custom preprocessing before value is passed to type_handler instance and\
+                    validation func. Defaults to None.\n
             default (Any, optional):\n
                 Default for value the Descriptor is assigned to. Defaults to False.\n
             allow_none (bool, optional):\n
                 if None is a valid Value. Defaults to False.\n
-            validation_scope (Scope, optional): if the assigned field is of type Sequence \n
-                (e.g. list, tuple, sets), determined whether the validation is applied to the elements or the collection itself. Defaults to Scope.ITEM.\n
+            validation_scope (Scope, optional): if the assigned field is of type Sequence \
+                (e.g. list, tuple, sets), determined whether the validation is applied to \
+                the elements or the collection itself. Defaults to Scope.ITEM.\n
             omit_logging (bool, optional):\n
                 option to suppress all logging caused by the field. Defaults to False.
         """
@@ -234,10 +234,9 @@ class Validator:
         else:
             self._name = name
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: ValidatedClass, owner):
         if not instance:
             return self
-        # return instance.__dict__[self.name]
         return instance.__dict__.get(self._name, self._default)
 
     def __delete__(self, instance):
@@ -264,7 +263,7 @@ class Validator:
 
         if not self._omit_logging and value is None:
             self._logger.warn(
-                f"field '{self._name}' in Parentfield "
+                f"field '{self._name}' in Parent-field "
                 + f"'{instance.__class__.__name__}' was not passed defaulting to {self._default}"
             )
         # handle case where a field is equal to another field,
@@ -311,9 +310,9 @@ class Validator:
             # treat primitive type mismatch as "real" typeError
             if self._annotated_type in [str, int, float, bool]:
                 raise TypeError(
-                    f"invalid type provided for attribute: {self._name} \n" +
-                    f"  expected type {self._annotated_type}, received <value> \n" +
-                    f"  {value} of type {self._value_type}"
+                    f"invalid type provided for attribute: {self._name} \n"
+                    + f"  expected type {self._annotated_type}, received <value> \n"
+                    + f"  {value} of type {self._value_type}"
                 )
             if isinstance(type_tuple[1], Callable):
                 try:
@@ -339,7 +338,7 @@ class Validator:
         else:
             return cast_fct(value)
 
-    def __set__(self, instance: object, value):
+    def __set__(self, instance: ValidatedClass, value):
         if self._name.startswith("_"):
             self._name = self._name[1:]
 
@@ -350,7 +349,11 @@ class Validator:
             value = self._handle_default_case(instance, value)
             return
 
-        if hasattr(self._annotated_type, "__origin__") and isinstance(value, Sequence) and not isinstance(value, str):
+        if (
+            hasattr(self._annotated_type, "__origin__")
+            and isinstance(value, Sequence)
+            and not isinstance(value, str)
+        ):
             self._handle_Sequences(instance, value)
             multiple = True
             type_tuple = (self._sub_value_type, self._sub_annotated_type)
@@ -362,17 +365,18 @@ class Validator:
             self._handle_None()
             return
         try:
-            value = self._handle_casting(instance=instance,
-                                         type_tuple=type_tuple,
-                                         value=value,
-                                         multiple=multiple)
+            value = self._handle_casting(
+                instance=instance, type_tuple=type_tuple, value=value, multiple=multiple
+            )
         except CastException as e:
-            if issubclass(self._annotated_type, Container):  
+            if issubclass(self._annotated_type, Container):
                 raise CastException(
-                    f"Subclass {instance.__class__.__name__} with field name {self._name} failed to initialize due to:\n {e}")
+                    f"Subclass {instance.__class__.__name__} with field name {self._name} failed to initialize due to:\n {e}"
+                )
             else:
                 raise CastException(
-                    f"attribute '{self._name}' in Class '{instance.__class__.__name__}' could not be set due to:\n {e}")
+                    f"attribute '{self._name}' in Class '{instance.__class__.__name__}' could not be set due to:\n {e}"
+                )
 
         # apply function to clean the possible values
         if self._cleaning_func:
@@ -393,7 +397,17 @@ class Validator:
         self._perform_validation(instance, value)
         return
 
-    def _resolve_instance_attr_ref(self, instance, functionWrapper: FunctionWrapper):
+    def _resolve_instance_attr_ref(
+        self, instance: ValidatedClass, functionWrapper: FunctionWrapper
+    ):
+        """for getting proxy reference e.g. output_path = "input_path" with "input_path" being a
+        reference to the field input_path of the class itself same with the reference nested
+        inside a list
+
+        Args:
+            instance (_type_): _description_
+            functionWrapper (FunctionWrapper): _description_
+        """
         temp_dict = deepcopy(functionWrapper.kwargs)
         for key, val in temp_dict.items():
             if isinstance(val, Sequence) and not isinstance(val, str):
@@ -408,8 +422,7 @@ class Validator:
         functionWrapper.kwargs = temp_dict
 
     def _perform_validation(self, instance, value):
-        # for getting proxy reference e.g. outputpath = "inputpath" with "inputpath" being a reference to the
-        # field inputpath of the class itself same with the reference nested inside a list
+
         self._resolve_instance_attr_ref(instance, self._validator_func)
         try:
             if (
@@ -431,23 +444,6 @@ class Validator:
 
 
 class Validator_Slotted(Validator):
-    # annotated_type: type
-    # value_type: type
-    # sub_value_type: type
-    # sub_annotated_type: type = type(None)
-    __slots__ = (
-        "_name",
-        "_annotated_type",
-        "_value_type",
-        "_sub_value_type",
-        "_sub_annotated_type",
-        "_cleaning_func",
-        "_validator_func",
-        "_default",
-        "_allow_none",
-        "_omit_logging",
-        "_logger",
-    )
     """class for validation of arguments Dataclass Args:\n
        Args:
         func (function): callback function which will either run successfully \
@@ -469,8 +465,26 @@ class Validator_Slotted(Validator):
 
        Returns:
         either the default value or the value passed by the owner class \
-        defaults itself to none   
+        defaults itself to none
     """
+
+    # annotated_type: type
+    # value_type: type
+    # sub_value_type: type
+    # sub_annotated_type: type = type(None)
+    __slots__ = (
+        "_name",
+        "_annotated_type",
+        "_value_type",
+        "_sub_value_type",
+        "_sub_annotated_type",
+        "_cleaning_func",
+        "_validator_func",
+        "_default",
+        "_allow_none",
+        "_omit_logging",
+        "_logger",
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -496,4 +510,3 @@ class Validator_Slotted(Validator):
 
     def _set_attr(self, instance, value):
         setattr(instance, "_" + self._name, value)
-

@@ -63,14 +63,18 @@ class Test_Altering(TestCase):
     
     def test_cast_bool_str(self):
         self.person.is_smoker = "TRUE"
+        self.assertTrue(self.person.is_smoker)
         self.person.is_smoker = "FALSE"
+        self.assertFalse(self.person.is_smoker)
 
     def test_list_assignment(self):
-        self.person.hobbies = ["auhb", "jiouasn"]
+        self.person.hobbies = ["soccer", "baseball"]
+        self.assertEqual(self.person.hobbies, ["soccer", "baseball"])
 
     def test_string_expansion(self):
         self.person.hobbies = "soccer,baseball"
         self.assertIsInstance(self.person.hobbies, list)
+        self.assertEqual(self.person.hobbies, ["soccer", "baseball"])
 
     def test_invalid_bool_cast_int(self):
         with self.assertRaises(Exception) as cm:
@@ -86,7 +90,7 @@ class Test_Altering(TestCase):
         self.person.first_name = None
 
     def test_unallowed_None(self):
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError):
             self.person.last_name = None
 
 
@@ -100,19 +104,19 @@ class Test_Construction(TestCase):
     def test_unallowed_missing_default(self):
         test_dict = copy.deepcopy(self.TEST_DICT)
         test_dict.pop("first_name")
-        with self.assertRaises(TypeError) as cm:
+        with self.assertRaises(TypeError):
             Person(**test_dict)
 
     def test_unallowed_missing(self):
         test_dict = copy.deepcopy(self.TEST_DICT)
         test_dict.pop("last_name")
-        with self.assertRaises(TypeError) as cm:
+        with self.assertRaises(TypeError):
             Person(**test_dict)
 
     def test_bool_missing(self):
         test_dict = copy.deepcopy(self.TEST_DICT)
         test_dict.pop("is_smoker")
-        with self.assertRaises(TypeError) as cm:
+        with self.assertRaises(TypeError):
             Person(**test_dict)
 
 

@@ -26,10 +26,10 @@ def _cast_float_to_int(inp: float) -> int:
     """casts float to integer if possible without precision loss
 
     Args:
-        inp (float): input value
+        inp: input value
 
     Raises:
-        ValueError: if float contains decimal places
+        ValueError: if float contains decimal places != 0
 
     Returns:
         int: casted value
